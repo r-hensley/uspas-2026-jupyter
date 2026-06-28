@@ -14,8 +14,8 @@ This package uses one editable instructor-solutions notebook per lab. Red soluti
 Run from the directory containing the notebooks:
 
 ```bash
-python make_student_versions.py
-python check_student_versions.py
+python3 make_student_versions.py
+python3 check_student_versions.py
 ```
 
 `make_student_versions.py` removes cells tagged `solution`, `solution-code`, `solution-red`, `instructor-note`, or `scratch`, then clears outputs and execution counts in the remaining student-facing cells.

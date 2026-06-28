@@ -65,10 +65,10 @@ The central learning arc is:
 
 **What students were asked to do:** Use the listed phase advance in the formula
 
-\[
+$$
 \beta_{\max}=L\frac{1+\sin(\psi/2)}{\sin\psi},\qquad
 \beta_{\min}=L\frac{1-\sin(\psi/2)}{\sin\psi},
-\]
+$$
 
 then compare with the simulated beta extrema from the Twiss plot or output parameters.
 

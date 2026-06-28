@@ -243,7 +243,7 @@ def _line_average(s: Sequence[float], y: Sequence[float]) -> float:
     length = float(s_arr[-1] - s_arr[0]) if len(s_arr) > 1 else 0.0
     if length <= 0:
         return float(np.mean(y_arr))
-    return float(np.trapezoid(y_arr, s_arr) / length)
+    return float(np.trapz(y_arr, s_arr) / length)
 
 
 def phase_advance_table(tw) -> pd.DataFrame:

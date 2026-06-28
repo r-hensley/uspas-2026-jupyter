@@ -11,12 +11,20 @@ ideas; it is not a replacement for a production accelerator code.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Callable, Iterable, Sequence
+from typing import Callable, Iterable, Mapping, Sequence
 import math
 import warnings
 
 import numpy as np
 import pandas as pd
+
+try:
+    import xtrack as xt
+except Exception as exc:  # pragma: no cover - notebook dependency check handles this
+    xt = None
+    _XTRACK_IMPORT_ERROR = exc
+else:
+    _XTRACK_IMPORT_ERROR = None
 
 try:
     import plotly.graph_objects as go
@@ -39,7 +47,7 @@ DBA_Q3_DEFAULT = -2.15            # flanking quad strength used for the stable D
 DBA_N_CELLS_DEFAULT = 10
 
 
-@dataclass(frozen=True)
+@dataclass
 class Element:
     """One first-order lattice element.
 
@@ -70,6 +78,37 @@ class Element:
     edge_angle: float = 0.0
     role: str = ""
 
+    @property
+    def edge_entry_angle(self) -> float:
+        return self.edge_angle
+
+    @edge_entry_angle.setter
+    def edge_entry_angle(self, value: float) -> None:
+        self.edge_angle = float(value)
+
+    @property
+    def edge_exit_angle(self) -> float:
+        return self.edge_angle
+
+    @edge_exit_angle.setter
+    def edge_exit_angle(self, value: float) -> None:
+        self.edge_angle = float(value)
+
+
+class Lattice(list):
+    """Small named-element list used by the local optics model."""
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            for element in self:
+                if element.name == key:
+                    return element
+            raise KeyError(key)
+        return super().__getitem__(key)
+
+    def copy(self):
+        return Lattice(replace(element) for element in self)
+
 
 @dataclass
 class OpticsResult:
@@ -98,7 +137,7 @@ class OpticsResult:
 def check_environment() -> pd.DataFrame:
     """Return a compact dependency table for the notebook setup cell."""
     rows = []
-    for package in ["numpy", "pandas", "plotly", "ipywidgets"]:
+    for package in ["numpy", "pandas", "plotly", "ipywidgets", "xtrack"]:
         try:
             module = __import__(package)
             version = getattr(module, "__version__", "installed")
@@ -115,6 +154,13 @@ def _require_plotly() -> None:
         raise ImportError(
             "Plotly is required for plotting in this lab. Install plotly or run the notebook in an environment that includes it."
         ) from _PLOTLY_IMPORT_ERROR
+
+
+def _require_xtrack() -> None:
+    if xt is None:
+        raise ImportError(
+            "Xtrack is required for the Xsuite Environment lattice examples. Install xtrack or run the notebook in an environment that includes it."
+        ) from _XTRACK_IMPORT_ERROR
 
 
 def _maybe_display(obj) -> None:
@@ -311,23 +357,56 @@ def propagate_twiss(beta: float, alpha: float, matrix: np.ndarray) -> tuple[floa
 # ---------------------------------------------------------------------------
 
 
-def make_fodo_cell(kq: float = 0.6, bend_angle_deg: float = 20.0, with_bend: bool = True, edge_focusing: bool = False) -> list[Element]:
-    """Return the five-meter FODO cell used in Section A."""
-    bend_angle = math.radians(bend_angle_deg)
-    edge_angle = 0.5 * bend_angle if edge_focusing else 0.0
-    bend_or_drift = (
-        Element("BEND", "bend", 0.5, angle=bend_angle, edge_angle=edge_angle, role="20-degree bend slot")
-        if with_bend
-        else Element("D_BEND_SLOT", "drift", 0.5, role="slot occupied by bend in the modified cell")
-    )
-    return [
-        Element("D1", "drift", 1.0),
-        Element("QF", "quad", 0.5, k1=+kq, role="focusing quadrupole"),
-        Element("D2", "drift", 1.5),
-        bend_or_drift,
-        Element("QD", "quad", 0.5, k1=-kq, role="defocusing quadrupole"),
-        Element("D3", "drift", 1.0),
-    ]
+def make_fodo_cell(kq: float = 0.6, bend_angle_deg: float = 20.0, with_bend: bool = True, edge_focusing: bool = False) -> Lattice:
+    """Return the five-meter FODO cell used in Section A.
+
+    The public notebook cells use modern Xsuite ``Environment`` syntax. This
+    helper follows the same construction path, then converts the simple Xsuite
+    line to the local first-order ``Element`` representation used by the optics
+    calculations in this lab.
+    """
+    _require_xtrack()
+
+    env = xt.Environment()
+    env["kq"] = float(kq)
+    env["bend_angle"] = math.radians(float(bend_angle_deg))
+    env["bend_length"] = 0.5
+    env["edge_angle"] = 0.5 * env["bend_angle"] if edge_focusing else 0.0
+
+    env.new("D1", xt.Drift, length=1.0)
+    env.new("QF", xt.Quadrupole, length=0.5, k1="kq")
+
+    if with_bend:
+        env.new("D2", xt.Drift, length=1.5)
+        env.new(
+            "BEND",
+            xt.Bend,
+            length="bend_length",
+            angle="bend_angle",
+            k0="bend_angle / bend_length",
+            edge_entry_angle="edge_angle",
+            edge_exit_angle="edge_angle",
+        )
+        components = ["D1", "QF", "D2", "BEND", "QD", "D3"]
+        roles = {
+            "QF": "focusing quadrupole",
+            "BEND": "20-degree bend slot",
+            "QD": "defocusing quadrupole",
+        }
+    else:
+        env.new("D2", xt.Drift, length=2.0)
+        components = ["D1", "QF", "D2", "QD", "D3"]
+        roles = {
+            "QF": "focusing quadrupole",
+            "QD": "defocusing quadrupole",
+        }
+
+    env.new("QD", xt.Quadrupole, length=0.5, k1="-kq")
+    env.new("D3", xt.Drift, length=1.0)
+
+    line = env.new_line(name="fodo_cell", components=components)
+    line.particle_ref = xt.Particles(p0c=1e9, mass0=xt.ELECTRON_MASS_EV, q0=-1)
+    return elements_from_xsuite_line(line, roles=roles)
 
 
 def make_dba_cell(
@@ -336,7 +415,7 @@ def make_dba_cell(
     q3: float = DBA_Q3_DEFAULT,
     bend_angle_deg: float = DBA_BEND_ANGLE_DEG,
     edge_focusing: bool = False,
-) -> list[Element]:
+) -> Lattice:
     """Return a compact local double-bend-achromat cell.
 
     Q1 is inside the two-bend insert and controls endpoint dispersion.  Q2 and
@@ -345,7 +424,7 @@ def make_dba_cell(
     """
     angle = math.radians(bend_angle_deg)
     edge_angle = 0.5 * angle if edge_focusing else 0.0
-    return [
+    return Lattice([
         Element("D0", "drift", 0.5),
         Element("Q2", "quad", 0.3, k1=q2, role="upstream flanking quadrupole"),
         Element("D1", "drift", 0.5),
@@ -357,16 +436,58 @@ def make_dba_cell(
         Element("D4", "drift", 0.5),
         Element("Q3", "quad", 0.3, k1=q3, role="downstream flanking quadrupole"),
         Element("D5", "drift", 0.5),
-    ]
+    ])
 
 
-def repeat_cell(elements: Sequence[Element], n_cells: int = DBA_N_CELLS_DEFAULT) -> list[Element]:
+def repeat_cell(elements: Sequence[Element], n_cells: int = DBA_N_CELLS_DEFAULT) -> Lattice:
     """Repeat a cell and suffix element names with cell numbers."""
-    repeated: list[Element] = []
+    repeated = Lattice()
     for i_cell in range(1, int(n_cells) + 1):
         for element in elements:
             repeated.append(replace(element, name=f"{element.name}_c{i_cell}"))
     return repeated
+
+
+def elements_from_xsuite_line(line, roles: Mapping[str, str] | None = None) -> Lattice:
+    """Convert a simple Xsuite line into the local first-order model.
+
+    The dispersion/chromaticity lab keeps its transport model local, but the
+    notebook can still use modern Xsuite ``Environment``/``Line`` syntax for
+    front-facing lattice construction. This adapter is intentionally narrow:
+    it supports drifts, quadrupoles, and sector-like bends.
+    """
+    roles = dict(roles or {})
+    table = line.get_table().to_pandas()
+    by_name = table.set_index("name", drop=False)
+    elements = Lattice()
+
+    for name in line.element_names:
+        if name == "_end_point":
+            continue
+        element = line[name]
+        element_type = str(by_name.loc[name, "element_type"])
+        length = float(getattr(element, "length", by_name.loc[name, "s_end"] - by_name.loc[name, "s_start"]))
+
+        if element_type == "Drift":
+            elements.append(Element(name, "drift", length, role=roles.get(name, "")))
+        elif element_type == "Quadrupole":
+            elements.append(Element(name, "quad", length, k1=float(element.k1), role=roles.get(name, "")))
+        elif element_type in {"Bend", "RBend"}:
+            edge_angle = 0.5 * (float(getattr(element, "edge_entry_angle", 0.0)) + float(getattr(element, "edge_exit_angle", 0.0)))
+            elements.append(
+                Element(
+                    name,
+                    "bend",
+                    length,
+                    angle=float(element.angle),
+                    edge_angle=edge_angle,
+                    role=roles.get(name, ""),
+                )
+            )
+        else:
+            raise ValueError(f"Unsupported Xsuite element type {element_type!r} for element {name!r}")
+
+    return elements
 
 
 def element_layout(elements: Sequence[Element]) -> pd.DataFrame:
