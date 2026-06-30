@@ -1,0 +1,6 @@
+ipywidgets
+numpy
+pandas
+plotly
+scipy
+xtrack
