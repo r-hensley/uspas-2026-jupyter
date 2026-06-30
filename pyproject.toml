@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uspas-2026-jupyter"
-version = "0.1.0"
+version = "0.1.1"
 description = "Helper modules for the USPAS 2026 Jupyter/Colab accelerator physics labs."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,12 +15,6 @@ dependencies = [
     "plotly",
     "scipy",
     "xtrack",
-]
-
-[tool.setuptools]
-py-modules = [
-    "dc_local_helpers",
-    "quadrupole_focusing_xsuite_helpers",
 ]
 
 [tool.setuptools.packages.find]
