@@ -22,3 +22,6 @@ py-modules = [
     "dc_local_helpers",
     "quadrupole_focusing_xsuite_helpers",
 ]
+
+[tool.setuptools.packages.find]
+include = ["uspas_labs*"]

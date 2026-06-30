@@ -18,6 +18,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from .shared import dependency_table, maybe_display as _maybe_display, show_or_return as _show_or_return
+
 try:
     import xtrack as xt
 except Exception as exc:  # pragma: no cover - notebook dependency check handles this
@@ -136,17 +138,7 @@ class OpticsResult:
 
 def check_environment() -> pd.DataFrame:
     """Return a compact dependency table for the notebook setup cell."""
-    rows = []
-    for package in ["numpy", "pandas", "plotly", "ipywidgets", "xtrack"]:
-        try:
-            module = __import__(package)
-            version = getattr(module, "__version__", "installed")
-            status = "available"
-        except Exception as exc:
-            version = "not installed"
-            status = f"missing: {exc.__class__.__name__}"
-        rows.append({"package": package, "version": version, "status": status})
-    return pd.DataFrame(rows)
+    return dependency_table(["numpy", "pandas", "plotly", "ipywidgets", "xtrack"])
 
 
 def _require_plotly() -> None:
@@ -161,15 +153,6 @@ def _require_xtrack() -> None:
         raise ImportError(
             "Xtrack is required for the Xsuite Environment lattice examples. Install xtrack or run the notebook in an environment that includes it."
         ) from _XTRACK_IMPORT_ERROR
-
-
-def _maybe_display(obj) -> None:
-    try:
-        from IPython.display import display
-    except Exception:
-        print(obj)
-    else:
-        display(obj)
 
 
 def _format_element_label(element: Element) -> str:
@@ -1069,7 +1052,6 @@ def acceptance_comparison(dispersion_limit_delta: float, chromatic_limit_delta: 
 # Plotting
 # ---------------------------------------------------------------------------
 
-
 def plot_optics(result: OpticsResult, title: str = "Optics", show: bool = True):
     _require_plotly()
     df = result.table
@@ -1083,9 +1065,7 @@ def plot_optics(result: OpticsResult, title: str = "Optics", show: bool = True):
     fig.update_yaxes(title_text="beta [m]", row=1, col=1)
     fig.update_yaxes(title_text="eta [m]", row=2, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", width=900, height=620)
-    if show:
-        fig.show()
-    return fig
+    return _show_or_return(fig, show)
 
 
 def plot_beam_size(result: OpticsResult, sigma_delta: float = SIGMA_DELTA_DEFAULT, title: str = "RMS beam size", show: bool = True):
@@ -1097,9 +1077,7 @@ def plot_beam_size(result: OpticsResult, sigma_delta: float = SIGMA_DELTA_DEFAUL
     fig.add_trace(go.Scatter(x=df["s_m"], y=df["sigma_x_beta_mm"], mode="lines", name="sigma_x betatron only", hovertemplate=hover + "<extra></extra>"))
     fig.add_trace(go.Scatter(x=df["s_m"], y=df["sigma_y_mm"], mode="lines", name="sigma_y", hovertemplate=hover + "<extra></extra>"))
     fig.update_layout(title=f"{title} (sigma_delta={sigma_delta:g})", xaxis_title="s [m]", yaxis_title="rms size [mm]", template="plotly_white", width=900, height=430, hovermode="x unified")
-    if show:
-        fig.show()
-    return fig
+    return _show_or_return(fig, show)
 
 
 def plot_beam_size_with_aperture(result: OpticsResult, sigma_delta: float, pipe_radius_m: float = PIPE_RADIUS_DEFAULT, n_sigma: float = 1.0, show: bool = True):
@@ -1110,9 +1088,7 @@ def plot_beam_size_with_aperture(result: OpticsResult, sigma_delta: float, pipe_
     fig.add_trace(go.Scatter(x=df["s_m"], y=envelope_mm, mode="lines", name=f"{n_sigma:g} sigma_x envelope"))
     fig.add_trace(go.Scatter(x=df["s_m"], y=np.full(len(df), 1e3 * pipe_radius_m), mode="lines", name="pipe radius"))
     fig.update_layout(title=f"Horizontal envelope versus aperture (sigma_delta={sigma_delta:g})", xaxis_title="s [m]", yaxis_title="radius [mm]", template="plotly_white", width=900, height=430)
-    if show:
-        fig.show()
-    return fig
+    return _show_or_return(fig, show)
 
 
 def plot_q1_scan(scan: pd.DataFrame, title: str = "Endpoint dispersion versus Q1", show: bool = True):
@@ -1127,9 +1103,7 @@ def plot_q1_scan(scan: pd.DataFrame, title: str = "Endpoint dispersion versus Q1
     fig.update_yaxes(title_text="eta", row=1, col=1)
     fig.update_yaxes(title_text="penalty", row=2, col=1, type="log")
     fig.update_layout(title=title, template="plotly_white", width=900, height=620)
-    if show:
-        fig.show()
-    return fig
+    return _show_or_return(fig, show)
 
 
 def plot_tune_footprint(nux: float, nuy: float, cx: float, cy: float, sigma_delta: float = SIGMA_DELTA_DEFAULT, resonance_order: int = 3, show: bool = True):
@@ -1160,9 +1134,7 @@ def plot_tune_footprint(nux: float, nuy: float, cx: float, cy: float, sigma_delt
     fig.add_trace(go.Scatter(x=[nux], y=[nuy], mode="markers", name="nominal tune", marker=dict(size=10), hovertemplate="Qx=%{x:.6g}<br>Qy=%{y:.6g}<extra></extra>"))
     fig.add_trace(go.Scatter(x=[x0, x1], y=[y0, y1], mode="lines+markers", name="chromatic footprint", line=dict(width=4), hovertemplate="Qx=%{x:.6g}<br>Qy=%{y:.6g}<extra></extra>"))
     fig.update_layout(title=f"Tune footprint, resonance order <= {resonance_order}, sigma_delta={sigma_delta:g}", xaxis_title="Qx", yaxis_title="Qy", xaxis=dict(range=x_range), yaxis=dict(range=y_range), template="plotly_white", width=760, height=680)
-    if show:
-        fig.show()
-    return fig
+    return _show_or_return(fig, show)
 
 
 # ---------------------------------------------------------------------------

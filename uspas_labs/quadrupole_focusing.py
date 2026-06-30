@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import contextlib
 import io
-import os
 import warnings
 from typing import Mapping, Sequence
 
@@ -20,6 +19,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 import xtrack as xt
+
+from .shared import should_show_plot, show_or_return
 
 GEOMETRIC_EMITTANCE = 6e-6       # 6 mm mrad = 6e-6 m rad
 P0C_EV = 1e9                     # 1 GeV/c reference momentum
@@ -455,10 +456,8 @@ def cell_start_envelope_table(tw_dense, *, cell_length: float = FODO_CELL_LENGTH
 # -----------------------------------------------------------------------------
 
 
-def _show(fig: go.Figure) -> go.Figure:
-    if os.environ.get("QF_LAB_SUPPRESS_PLOTS", "0") not in {"1", "true", "True"}:
-        fig.show()
-    return fig
+def _show(fig: go.Figure):
+    return show_or_return(fig, should_show_plot("QF_LAB_SUPPRESS_PLOTS"))
 
 
 def _names(tw) -> np.ndarray:

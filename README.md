@@ -4,7 +4,7 @@ Helper modules and instructor/student notebooks for the USPAS 2026 accelerator p
 
 ## Colab setup
 
-Each notebook installs the helper modules from this repository before importing them:
+Each notebook installs the helper package from this repository before importing the lab modules:
 
 ```python
 HELPER_VERSION = "main"
@@ -26,10 +26,13 @@ subprocess.check_call([
 
 For a student release, replace `main` with a tag such as `v2026-lab1` after pushing the matching helper code.
 
-## Helper modules
+## Helper Modules
 
-- `dc_local_helpers.py` supports the dispersion and chromaticity lab.
-- `quadrupole_focusing_xsuite_helpers.py` supports the quadrupole focusing Xsuite lab.
+- `uspas_labs.dispersion_chromaticity` supports the dispersion and chromaticity lab.
+- `uspas_labs.quadrupole_focusing` supports the quadrupole focusing Xsuite lab.
+- `uspas_labs.shared` contains common notebook/display utilities.
+
+Older imports through `dc_local_helpers.py` and `quadrupole_focusing_xsuite_helpers.py` are kept as compatibility wrappers.
 
 ## Notebook workflow
 
