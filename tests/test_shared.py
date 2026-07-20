@@ -79,10 +79,12 @@ def test_add_lattice_strip_draws_element_shapes_and_labels():
         ]
     )
     fig = go.Figure()
+    fig.add_vline(x=1.25, annotation_text="transition")
 
     returned = shared.add_lattice_strip(fig, layout)
 
     assert returned is fig
     assert len(fig.layout.shapes) >= len(layout) + 2
-    assert {annotation.text for annotation in fig.layout.annotations} == {"QF", "BEND", "QD"}
+    assert {annotation.text for annotation in fig.layout.annotations} == {"transition", "QF", "BEND", "QD"}
+    assert any(shape.x0 == 1.25 and shape.x1 == 1.25 for shape in fig.layout.shapes)
     assert fig.layout.margin.t >= 105

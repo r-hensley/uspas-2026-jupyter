@@ -33,6 +33,7 @@ from .shared import (
     should_show_plot,
     show_or_return,
 )
+from .matching_section_plots import plot_linked_matching_section_phase_space
 
 GEOMETRIC_EMITTANCE = 6e-6       # 6 mm mrad = 6e-6 m rad
 P0C_EV = 1e9                     # 1 GeV/c reference momentum
@@ -456,7 +457,10 @@ def quad_length_fixed_phase_table(
     for qlen in quad_lengths:
         k1 = solve_k1_for_tune(float(target_q), float(qlen))
         line = make_fodo_line(1, k1=k1, quad_length=float(qlen))
-        tw = twiss_dense(line, points_per_meter=300)
+        # The symmetric cell exposes the QF and QD centers as element
+        # boundaries, where the periodic beta extrema occur. Dense slicing
+        # therefore adds thousands of points without changing these values.
+        tw = twiss_periodic(line)
         beta_min = float(np.min(tw.betx))
         beta_max = float(np.max(tw.betx))
         rows.append({
@@ -1067,6 +1071,49 @@ def plot_sectioned_twiss(
     return _show(fig)
 
 
+def plot_insertion_design(
+    tw,
+    *,
+    injection_s: float,
+    central_drift_start_s: float,
+    central_drift_end_s: float,
+    title: str = "Matched injection-insertion optics",
+) -> go.Figure:
+    """Plot insertion beta functions with the field-free region and marker."""
+
+    names = _names(tw)
+    fig = go.Figure()
+    fig.add_trace(_hover_trace(tw.s, tw.betx, names, "βx"))
+    fig.add_trace(_hover_trace(tw.s, tw.bety, names, "βy"))
+    fig.add_vrect(
+        x0=float(central_drift_start_s),
+        x1=float(central_drift_end_s),
+        fillcolor="rgba(44, 160, 44, 0.12)",
+        line_width=0,
+        layer="below",
+        annotation_text="6 m field-free injection region",
+        annotation_position="top left",
+    )
+    fig.add_vline(
+        x=float(injection_s),
+        line_color="#d62728",
+        line_dash="dash",
+        line_width=2,
+        annotation_text="injection marker",
+        annotation_position="top right",
+    )
+    fig.update_layout(
+        title=title,
+        xaxis_title="s [m]",
+        yaxis_title="β [m]",
+        hovermode="closest",
+        template="plotly_white",
+        width=950,
+        height=500,
+    )
+    return _show(fig)
+
+
 def twiss_covariance(beta: float, alpha: float, emit: float = GEOMETRIC_EMITTANCE) -> np.ndarray:
     gamma = (1.0 + alpha**2) / beta
     return np.array([[emit*beta, -emit*alpha], [-emit*alpha, emit*gamma]])
@@ -1308,7 +1355,7 @@ def plot_phase_space_filmstrip(
         cols=n_cols,
         subplot_titles=subplot_titles,
         horizontal_spacing=0.07,
-        vertical_spacing=0.13,
+        vertical_spacing=0.20 if n_rows > 1 else 0.0,
     )
 
     for i_panel, (station, cloud, cloud_x, cloud_xp, ellipse_x, ellipse_xp) in enumerate(panel_data):
@@ -1357,7 +1404,7 @@ def plot_phase_space_filmstrip(
         title=title,
         template="plotly_white",
         width=1050,
-        height=310 * n_rows,
+        height=360 * n_rows,
         legend=dict(orientation="h", yanchor="top", y=-0.08),
     )
     return _show(fig)
@@ -1743,7 +1790,7 @@ def interactive_manual_match(initial_twiss: Mapping[str, float]):
         set_match_knobs(section, [k1, k2, k3, k4])
         try:
             tw = twiss_dense(section, points_per_meter=40, **dict(initial_twiss))
-            plot_twiss(tw, "Manual matching-section trial", show_lattice=False)
+            plot_twiss(tw, "Manual matching-section trial", show_lattice=True)
             display(pd.DataFrame({
                 "target metric": ["beta_x - beta_y [m]", "alpha_x", "alpha_y"],
                 "value at end": [float(tw.betx[-1]-tw.bety[-1]), float(tw.alfx[-1]), float(tw.alfy[-1])],

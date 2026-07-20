@@ -373,6 +373,17 @@ def test_cell_boundary_beta_beating_exposes_mismatch():
 def test_quad_length_scan_plot_shows_data_against_fixed_references():
     target_q = qfh.twiss_periodic(qfh.make_fodo_line(1, k1=0.6)).qx
     scan = qfh.quad_length_fixed_phase_table(target_q, quad_lengths=(0.1, 0.5, 1.0))
+
+    for _, row in scan.iterrows():
+        line = qfh.make_fodo_line(
+            1,
+            k1=float(row["|k1| for same phase [1/m^2]"]),
+            quad_length=float(row["quad length [m]"]),
+        )
+        dense = qfh.twiss_dense(line, n_points=101)
+        assert row["beta_min thick [m]"] == pytest.approx(float(np.min(dense.betx)))
+        assert row["beta_max thick [m]"] == pytest.approx(float(np.max(dense.betx)))
+
     fig = qfh.plot_quad_length_scan(scan, target_q)
 
     assert isinstance(fig, go.Figure)

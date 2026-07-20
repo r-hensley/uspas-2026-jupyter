@@ -238,7 +238,13 @@ def add_lattice_strip(
         current_top = getattr(getattr(fig.layout, "margin", None), "t", None) or 60
         fig.update_layout(margin=dict(t=max(current_top, 105)))
 
-    fig.add_shape(
+    # Plotly repeatedly validates and copies the entire layout when shapes and
+    # annotations are added one at a time. Long beamlines can contain hundreds
+    # of strip primitives, so collect them and assign each layout array once.
+    # Keep any existing items (for example transition lines or subplot titles).
+    shapes = list(fig.layout.shapes or ())
+    annotations = list(fig.layout.annotations or ())
+    shapes.append(dict(
         type="line",
         xref=xref,
         yref=yref,
@@ -248,7 +254,7 @@ def add_lattice_strip(
         y1=y,
         line=dict(color="rgba(80, 90, 105, 0.85)", width=2),
         layer="above",
-    )
+    ))
 
     label_count = 0
     max_labels = 36
@@ -258,7 +264,7 @@ def add_lattice_strip(
         x0 = float(row["s_start_m"])
         x1 = float(row["s_end_m"])
 
-        fig.add_shape(
+        shapes.append(dict(
             type="line",
             xref=xref,
             yref=yref,
@@ -268,10 +274,10 @@ def add_lattice_strip(
             y1=y + tick / 2,
             line=dict(color="rgba(80, 90, 105, 0.55)", width=1),
             layer="above",
-        )
+        ))
 
         if kind == "drift":
-            fig.add_shape(
+            shapes.append(dict(
                 type="line",
                 xref=xref,
                 yref=yref,
@@ -281,7 +287,7 @@ def add_lattice_strip(
                 y1=y,
                 line=dict(color="rgba(120, 130, 145, 0.85)", width=3),
                 layer="above",
-            )
+            ))
             continue
 
         if kind == "quad":
@@ -305,7 +311,7 @@ def add_lattice_strip(
             fill = "rgba(110, 120, 130, 0.55)"
             line = "rgba(80, 90, 100, 0.95)"
 
-        fig.add_shape(
+        shapes.append(dict(
             type="rect",
             xref=xref,
             yref=yref,
@@ -316,9 +322,9 @@ def add_lattice_strip(
             fillcolor=fill,
             line=dict(color=line, width=1.2),
             layer="above",
-        )
+        ))
         if show_labels and kind != "drift" and label_count < max_labels:
-            fig.add_annotation(
+            annotations.append(dict(
                 x=0.5 * (x0 + x1),
                 y=max(y0, y1) + height * 0.12,
                 xref=xref,
@@ -327,10 +333,10 @@ def add_lattice_strip(
                 showarrow=False,
                 font=dict(size=9, color="rgba(45, 55, 72, 0.95)"),
                 align="center",
-            )
+            ))
             label_count += 1
 
-    fig.add_shape(
+    shapes.append(dict(
         type="line",
         xref=xref,
         yref=yref,
@@ -340,5 +346,7 @@ def add_lattice_strip(
         y1=y + tick / 2,
         line=dict(color="rgba(80, 90, 105, 0.55)", width=1),
         layer="above",
-    )
+    ))
+    fig.layout.shapes = tuple(shapes)
+    fig.layout.annotations = tuple(annotations)
     return fig
