@@ -1,0 +1,21 @@
+.*
+!.gitignore
+
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
+build/
+*.egg-info/
+
+# Instructor-only notebooks and local authoring workflow
+*Instructor*.ipynb
+*instructor*.ipynb
+make_student_versions.py
+check_student_versions.py
+tests/test_notebook_workflow.py
+README_Solutions_Output_Workflow.md
+VERIFICATION_Solutions_Output_Workflow.md
+*_exercise_inventory.md
+
+# Local scratch files
+template.txt
