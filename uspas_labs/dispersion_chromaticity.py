@@ -3096,7 +3096,6 @@ def plot_accumulated_phase_advance(
             hovertemplate="d(ψᵧ / 2π)/ds = %{y:.6f} m⁻¹<extra></extra>",
         ), row=3, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", autosize=True, width=None, height=600 if show_inverse_beta else 500, margin=dict(t=85))
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.3f} m"))
     fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=1)
     fig.update_yaxes(visible=False, range=[-1.0, 1.0], row=1, col=1)
     fig.update_yaxes(title_text="phase / 2π", row=phase_row, col=1)
@@ -3165,7 +3164,6 @@ def plot_xsuite_accumulated_phase_advance(
             hovertemplate="d(ψᵧ / 2π)/ds = %{y:.6f} m⁻¹<extra></extra>",
         ), row=3, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", autosize=True, width=None, height=600 if show_inverse_beta else 500, margin=dict(t=85))
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.3f} m"))
     fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=1)
     fig.update_yaxes(visible=False, range=[-1.0, 1.0], row=1, col=1)
     fig.update_yaxes(title_text="phase / 2π", row=phase_row, col=1)
@@ -3265,7 +3263,6 @@ def plot_optics(
     fig.update_yaxes(title_text="β [m]", row=beta_row, col=1)
     fig.update_yaxes(title_text="Dₓ [m]", row=dispersion_row, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", autosize=True, width=None, height=620)
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.4g} m"))
     if show_lattice:
         fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=1)
         fig.update_yaxes(visible=False, range=[-1.0, 1.0], row=1, col=1)
@@ -3293,7 +3290,6 @@ def plot_beam_size(result: OpticsResult, sigma_delta: float = SIGMA_DELTA_DEFAUL
         hovertemplate="%{customdata}<br>σᵧ = %{y:.5g} mm<extra></extra>",
     ))
     fig.update_layout(title=f"{title} (σδ={sigma_delta:g})", xaxis_title="s [m]", yaxis_title="rms size [mm]", template="plotly_white", autosize=True, width=None, height=430, hovermode="x unified")
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.4g} m"))
     if show_lattice:
         add_lattice_strip(fig, result.layout)
     return _show_or_return(fig, show)
@@ -3395,7 +3391,6 @@ def plot_optics_and_beam_size(
         if "beam" in fixed_ranges:
             fig.update_yaxes(range=[float(value) for value in fixed_ranges["beam"]], row=beam_row, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", autosize=True, width=None, height=720)
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.4g} m"))
     if show_lattice:
         fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=1)
         fig.update_yaxes(visible=False, range=[-1.0, 1.0], row=1, col=1)
@@ -3434,7 +3429,6 @@ def plot_beam_size_with_aperture(
         hovertemplate="pipe radius = %{y:.5g} mm<extra></extra>",
     ))
     fig.update_layout(title=f"Horizontal RMS envelope versus aperture (σδ={sigma_delta:g})", xaxis_title="s [m]", yaxis_title="radius [mm]", template="plotly_white", hovermode="x unified", autosize=True, width=None, height=430)
-    fig.update_xaxes(unifiedhovertitle=dict(text="s = %{x:.4g} m"))
     if fixed_y_range is not None:
         fig.update_yaxes(range=[float(value) for value in fixed_y_range])
     if show_lattice:
@@ -3466,7 +3460,6 @@ def plot_q1_scan(scan: pd.DataFrame, title: str = "Endpoint dispersion versus Q1
     fig.add_hline(y=0.0, line=dict(color="rgba(90, 100, 115, 0.45)", width=1), row=1, col=1)
     fig.add_hline(y=0.0, line=dict(color="rgba(90, 100, 115, 0.45)", width=1), row=2, col=1)
     fig.update_layout(title=title, template="plotly_white", hovermode="x unified", autosize=True, width=None, height=540, showlegend=False)
-    fig.update_xaxes(unifiedhovertitle=dict(text="Q1 k₁ = %{x:.4g} m⁻²"))
     return _show_or_return(fig, show)
 
 

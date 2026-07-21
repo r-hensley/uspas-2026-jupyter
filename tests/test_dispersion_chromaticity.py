@@ -21,6 +21,7 @@ def _hover_templates(trace) -> list[str]:
 
 
 def _assert_every_data_trace_hovers_its_value(fig: go.Figure) -> None:
+    assert "unifiedhovertitle" not in fig.to_json()
     for trace in fig.data:
         assert trace.hoverinfo != "skip", trace.name
         templates = _hover_templates(trace)
