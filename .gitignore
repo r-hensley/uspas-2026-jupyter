@@ -19,3 +19,11 @@ VERIFICATION_Solutions_Output_Workflow.md
 
 # Local scratch files
 template.txt
+*.pdf
+*.tex
+*.docx
+*.md
+*audit*
+*Audit*
+*test*
+tmp/
